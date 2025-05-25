@@ -9,21 +9,9 @@ from tweetynetplusplus.models.factory import get_model_from_config
 from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, NormalizeTensor
 from torchvision import transforms
 from tweetynetplusplus.evaluation.reports import save_classification_report
-from tweetynetplusplus.config import settings
 
-import os
 import json
-import torch
-from torch.utils.data import DataLoader
-from sklearn.metrics import classification_report
-import numpy as np
 
-from tweetynetplusplus.preprocessing.dataset_builder import BirdsongSpectrogramDataset
-from tweetynetplusplus.training.metrics import compute_classification_metrics, plot_confusion_matrix
-from tweetynetplusplus.models.factory import get_model_from_config
-from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, NormalizeTensor
-from torchvision import transforms
-from tweetynetplusplus.evaluation.reports import save_classification_report
 
 def evaluate_from_checkpoint(
     model_path: str,

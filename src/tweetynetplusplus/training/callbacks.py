@@ -48,5 +48,5 @@ class EarlyStopping:
             
             return self.early_stop
             
-        except Exception as e:
+        except Exception:
             return False

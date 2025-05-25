@@ -15,6 +15,7 @@ from tweetynetplusplus.training.experiment_logger import init_logger, append_log
 from tweetynetplusplus.training.metrics import compute_classification_metrics, plot_confusion_matrix
 from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, NormalizeTensor
 from tweetynetplusplus.config import settings
+from tweetynetplusplus.utils.samplers import create_weighted_sampler
 
 
 def save_metadata_training_model(final_model_path: str, train_metrics: dict, val_metrics: dict, num_classes: str, config: dict):
@@ -58,7 +59,12 @@ def run_training_pipeline(config: dict):
     test_len = total - train_len - val_len
     train_ds, val_ds, test_ds = random_split(dataset, [train_len, val_len, test_len])
 
-    train_loader = DataLoader(train_ds, batch_size=config["data"]["batch_size"], shuffle=True)
+    if config["training"].get("use_sampler", False):
+        sampler = create_weighted_sampler(dataset, train_ds.indices)
+        train_loader = DataLoader(train_ds, batch_size=config["data"]["batch_size"], sampler=sampler)
+    else:
+        train_loader = DataLoader(train_ds, batch_size=config["data"]["batch_size"], shuffle=True)
+
     val_loader = DataLoader(val_ds, batch_size=config["data"]["batch_size"])
     test_loader = DataLoader(test_ds, batch_size=config["data"]["batch_size"])
 
@@ -82,8 +88,8 @@ def run_training_pipeline(config: dict):
 
     # Treinamento se necessário
     if not model_path:
-        weights = compute_class_weight('balanced', classes=np.arange(num_classes)+1,
-                                       y=[dataset.file_to_label[os.path.splitext(os.path.basename(f))[0]] for f in dataset.file_list])
+        class_labels = [dataset.file_to_label[os.path.splitext(os.path.basename(f))[0]] for f in dataset.file_list]
+        weights = compute_class_weight(class_weight='balanced', classes=np.unique(class_labels), y=class_labels)
         weights_tensor = torch.tensor(weights, dtype=torch.float32).to(device)
 
         criterion = nn.CrossEntropyLoss(weight=weights_tensor)
