@@ -1,0 +1,19 @@
+[model]
+name = "resnet18"
+pretrained = true
+
+[data]
+processed_dir = "data/processed/llb11"
+annotation_file = "data/raw/llb11/llb11_annot.csv"
+batch_size = 8
+
+[training]
+epochs = 30
+learning_rate = 1e-4
+weight_decay = 1e-4
+patience = 5
+use_saved_model = false
+
+[logging]
+model_dir = "models_checkpoints"
+log_dir = "logs"

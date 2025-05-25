@@ -1,0 +1,4 @@
+[training]
+learning_rate = 5e-5
+epochs = 40
+patience = 10

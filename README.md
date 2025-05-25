@@ -89,75 +89,84 @@ data/
 
 2. Process your dataset using the provided scripts in the `src/tweetynetplusplus` directory.
 
+
 ## Usage
 
-1. Configure your training parameters in the `configs` directory.
+### Configuration
 
-2. Run the training script:
-```bash
-python main.py --config configs/your_config.yaml
+All training and evaluation parameters are defined using `.toml` configuration files inside the `configs/` directory.
+
+- `default.toml`: defines base parameters for training, evaluation, data and logging.
+- `experimento_base.toml`: overrides specific parameters such as learning rate, epochs, etc.
+
+#### Example: `configs/default.toml`
+
+```toml
+[model]
+name = "resnet18"
+pretrained = true
+
+[data]
+processed_dir = "data/processed/llb11"
+annotation_file = "data/raw/llb11/llb11_annot.csv"
+batch_size = 8
+
+[training]
+epochs = 30
+learning_rate = 1e-4
+weight_decay = 1e-4
+patience = 5
+use_saved_model = false
+
+[logging]
+model_dir = "models_checkpoints"
+log_dir = "logs"
 ```
 
-## Development
+### Training
 
-To install development dependencies:
+To train a model using the combined configuration:
+
 ```bash
-uv pip install -e ".[dev]"
+python src/tweetynetplusplus/scripts/train_model.py
 ```
 
-Run tests:
+This script will:
+
+- Load `default.toml`
+- Merge it with `experimento_base.toml`
+- Run training with logging, checkpoint saving, and early stopping
+
+### Evaluation
+
+To evaluate a trained model and save metrics:
+
+```bash
+python src/tweetynetplusplus/scripts/evaluate_model.py
+```
+
+This will:
+
+- Load a saved model (edit the script to specify the `.pt` file)
+- Evaluate on the validation/test sets
+- Save classification report to `logs/classification_report.csv`
+- Save confusion matrix image to `logs/eval_confusion_matrix.png`
+- Export raw predictions to `logs/y_true.npy` and `logs/y_pred.npy`
+
+### Report Generation
+
+Once evaluation is complete, generate a CSV/JSON report with:
+
+```bash
+python src/tweetynetplusplus/scripts/generate_report.py
+```
+
+---
+
+## 🧪 Running Tests
+
+Unit tests are located in `tests/` and can be run via:
+
 ```bash
 pytest
-```
-
-## Project Structure
-
-```
-tweetynetplusplus/
-├── configs/           # Configuration files
-├── data/             # Dataset directory
-├── logs/             # Training logs
-├── models_checkpoints/ # Saved model checkpoints
-├── src/              # Source code
-│   └── tweetynetplusplus/
-├── tests/            # Test files
-├── main.py           # Main entry point
-└── pyproject.toml    # Project dependencies
-```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Acknowledgments
-
-- Original Tweetynet implementation by David Nicholson and colleagues
-  - Paper: Nicholson, D. P., & Cohen, Y. (2019). Tweetynet: A neural network for segmenting and classifying birdsong syllables. Journal of the Acoustical Society of America, 145(3), 1827-1838.
-  - GitHub: [Original Tweetynet Repository](https://github.com/NickleDave/tweetynet)
-- VAK framework for automated annotation of vocalizations
-- All contributors and users of this project
-
-## Citation
-
-If you use this software in your research, please cite both the original Tweetynet paper and this implementation:
-
-```bibtex
-@article{nicholson2019tweetynet,
-  title={Tweetynet: A neural network for segmenting and classifying birdsong syllables},
-  author={Nicholson, David P and Cohen, Yarden},
-  journal={Journal of the Acoustical Society of America},
-  volume={145},
-  number={3},
-  pages={1827--1838},
-  year={2019},
-  publisher={Acoustical Society of America}
-}
 ```
