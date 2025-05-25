@@ -1,5 +1,7 @@
+
 [model]
-name = "resnet18"
+name = "resnet18_custom"
+import_path = "tweetynetplusplus.models.backbones.resnet18_ft.ResNet18Finetune"
 pretrained = true
 
 [data]
@@ -12,7 +14,7 @@ epochs = 30
 learning_rate = 1e-4
 weight_decay = 1e-4
 patience = 5
-use_saved_model = false
+use_saved_model = true
 
 [logging]
 model_dir = "models_checkpoints"

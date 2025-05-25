@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, random_split
 from datetime import datetime
 from torchvision import transforms
 import numpy as np
-
+import json
 from sklearn.utils.class_weight import compute_class_weight
 from tweetynetplusplus.preprocessing.dataset_builder import BirdsongSpectrogramDataset
 from tweetynetplusplus.models.factory import get_model_from_config
@@ -15,6 +15,28 @@ from tweetynetplusplus.training.experiment_logger import init_logger, append_log
 from tweetynetplusplus.training.metrics import compute_classification_metrics, plot_confusion_matrix
 from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, NormalizeTensor
 from tweetynetplusplus.config import settings
+
+
+def save_metadata_training_model(final_model_path: str, train_metrics: dict, val_metrics: dict, num_classes: str, config: dict):
+
+    meta_path = final_model_path.name.replace(".pt", ".meta.json")
+    metadata = {
+        "model_name": config["model"]["name"],
+        "import_path": config["model"].get("import_path"),
+        "pretrained": config["model"].get("pretrained", True),
+        "num_classes": num_classes,
+        "dataset": os.path.basename(config["data"]["processed_dir"]),
+        "datetime": datetime.now().isoformat(),
+        "metrics": {
+            "train": train_metrics,
+            "val": val_metrics
+        }
+    }
+    with open(meta_path, "w") as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"📝 Metadados salvos em {meta_path}")
+
 
 def run_training_pipeline(config: dict):
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -118,7 +140,7 @@ def run_training_pipeline(config: dict):
         final_model_path = os.path.join(config["logging"]["model_dir"], f"{config['model']['name']}_{timestamp}.pt")
         torch.save(model.state_dict(), final_model_path)
         print(f"✅ Modelo salvo em {final_model_path}")
-
+        save_metadata_training_model(final_model_path, train_metrics, val_metrics, num_classes, config)
     # Avaliação final
     def eval_on_split(loader, name):
         model.eval()
