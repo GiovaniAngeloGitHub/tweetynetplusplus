@@ -1,6 +1,5 @@
-import logging
 from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 class DataConfig(BaseSettings):
     raw_root: str = Field(..., alias="RAW_DATA_ROOT")
@@ -25,7 +24,7 @@ class LoggingConfig(BaseSettings):
     log_level: str = Field("INFO", alias="LOG_LEVEL")
     log_dir: str = Field("logs", alias="LOG_DIR")
     
-    @validator('log_level')
+    @field_validator('log_level')
     def validate_log_level(cls, v):
         v = v.upper()
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']

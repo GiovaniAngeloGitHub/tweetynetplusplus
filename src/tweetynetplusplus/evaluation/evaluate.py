@@ -5,33 +5,36 @@ from sklearn.metrics import classification_report
 import numpy as np
 from tweetynetplusplus.preprocessing.dataset_builder import BirdsongSpectrogramDataset
 from tweetynetplusplus.training.metrics import compute_classification_metrics, plot_confusion_matrix
-from tweetynetplusplus.models.backbones.resnet18_ft import ResNet18Finetune
+from tweetynetplusplus.models.factory import get_model_from_config
 from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, NormalizeTensor
 from torchvision import transforms
 from tweetynetplusplus.evaluation.reports import save_classification_report
-
+from tweetynetplusplus.config import settings
 
 def evaluate_from_checkpoint(
     model_path: str,
-    processed_dir: str,
-    annotation_file: str,
     batch_size: int = 8,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
+    config: dict = None
 ):
     # Transformações padrão
     transform = transforms.Compose([
-        TemporalPadCrop(2048),
+        TemporalPadCrop(settings.data.target_width),
         NormalizeTensor()
     ])
 
     # Dataset completo (sem divisão treino/val/teste aqui)
-    dataset = BirdsongSpectrogramDataset(processed_dir, annotation_file, transform=transform)
+    dataset = BirdsongSpectrogramDataset(config["data"]["processed_dir"], config["data"]["annotation_file"], transform=transform)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     class_names = [str(c) for c in dataset.le.classes_]
 
     # Modelo
     num_classes = len(dataset.le.classes_)
-    model = ResNet18Finetune(num_classes=num_classes).to(device)
+    model = get_model_from_config(
+        model_name=config["model"]["name"],
+        num_classes=num_classes,
+        pretrained=config["model"].get("pretrained", True)
+    ).to(device)
     map_location = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.load_state_dict(torch.load(model_path, map_location=map_location))
     model.eval()
@@ -65,9 +68,3 @@ def evaluate_from_checkpoint(
     np.save("logs/y_true.npy", np.array(all_targets))
     np.save("logs/y_pred.npy", np.array(all_preds))
 
-if __name__ == "__main__":
-    evaluate_from_checkpoint(
-        model_path="models_checkpoints/resnet18_20240523_141200.pt",
-        processed_dir="data/processed/llb11",
-        annotation_file="data/raw/llb11/llb11_annot.csv"
-    )

@@ -9,18 +9,18 @@ import numpy as np
 
 from sklearn.utils.class_weight import compute_class_weight
 from tweetynetplusplus.preprocessing.dataset_builder import BirdsongSpectrogramDataset
-from tweetynetplusplus.models.backbones.resnet18_ft import ResNet18Finetune
+from tweetynetplusplus.models.factory import get_model_from_config
 from tweetynetplusplus.training.callbacks import EarlyStopping
 from tweetynetplusplus.training.experiment_logger import init_logger, append_log
 from tweetynetplusplus.training.metrics import compute_classification_metrics, plot_confusion_matrix
 from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, NormalizeTensor
-
+from tweetynetplusplus.config import settings
 
 def run_training_pipeline(config: dict):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     transform = transforms.Compose([
-        TemporalPadCrop(2048),
+        TemporalPadCrop(settings.data.target_width),
         NormalizeTensor()
     ])
 
@@ -44,7 +44,11 @@ def run_training_pipeline(config: dict):
     num_classes = len(dataset.le.classes_)
     os.makedirs(config["logging"]["model_dir"], exist_ok=True)
     model_path = None
-    model = ResNet18Finetune(num_classes=num_classes).to(device)
+    model = get_model_from_config(
+    model_name=config["model"]["name"],
+    num_classes=num_classes,
+    pretrained=config["model"].get("pretrained", True)
+).to(device)
 
     if config["training"].get("use_saved_model", False):
         checkpoints = sorted([f for f in os.listdir(config["logging"]["model_dir"]) if f.endswith(".pt")])
