@@ -1,3 +1,4 @@
+import logging
 import os
 import torch
 import torch.nn as nn
@@ -17,10 +18,10 @@ from tweetynetplusplus.preprocessing.transforms import TemporalPadCrop, Normaliz
 from tweetynetplusplus.config import settings
 from tweetynetplusplus.utils.samplers import create_weighted_sampler
 
-
+logger = logging.getLogger(__name__)
 def save_metadata_training_model(final_model_path: str, train_metrics: dict, val_metrics: dict, num_classes: str, config: dict):
 
-    meta_path = final_model_path.name.replace(".pt", ".meta.json")
+    meta_path = final_model_path.replace(".pt", ".meta.json")
     metadata = {
         "model_name": config["model"]["name"],
         "import_path": config["model"].get("import_path"),
@@ -41,7 +42,7 @@ def save_metadata_training_model(final_model_path: str, train_metrics: dict, val
 
 def run_training_pipeline(config: dict):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    logger.info(f"🚀 Iniciando treinamento em {device}")
     transform = transforms.Compose([
         TemporalPadCrop(settings.data.target_width),
         NormalizeTensor()
@@ -72,11 +73,7 @@ def run_training_pipeline(config: dict):
     num_classes = len(dataset.le.classes_)
     os.makedirs(config["logging"]["model_dir"], exist_ok=True)
     model_path = None
-    model = get_model_from_config(
-    model_name=config["model"]["name"],
-    num_classes=num_classes,
-    pretrained=config["model"].get("pretrained", True)
-).to(device)
+    model = get_model_from_config(config["model"], num_classes=num_classes).to(device)
 
     if config["training"].get("use_saved_model", False):
         checkpoints = sorted([f for f in os.listdir(config["logging"]["model_dir"]) if f.endswith(".pt")])
@@ -142,13 +139,15 @@ def run_training_pipeline(config: dict):
                 break
 
         # Salva o modelo
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        final_model_path = os.path.join(config["logging"]["model_dir"], f"{config['model']['name']}_{timestamp}.pt")
+        final_model_name = f"{config['model']['name']}_{timestamp}"
+        final_model_path = os.path.join(config["logging"]["model_dir"], f"{final_model_name}.pt")
         torch.save(model.state_dict(), final_model_path)
         print(f"✅ Modelo salvo em {final_model_path}")
         save_metadata_training_model(final_model_path, train_metrics, val_metrics, num_classes, config)
     # Avaliação final
-    def eval_on_split(loader, name):
+    def eval_on_split(loader, name, file_model_name=None):
         model.eval()
         preds, targets = [], []
         with torch.no_grad():
@@ -160,8 +159,7 @@ def run_training_pipeline(config: dict):
                 targets += y.tolist()
         metrics = compute_classification_metrics(targets, preds)
         print(f"\n📊 {name.upper()} | Acc: {metrics['acc']:.3f} | F1: {metrics['f1']:.3f} | Precision: {metrics['precision']:.3f} | Recall: {metrics['recall']:.3f}")
-        if name == "teste":
-            plot_confusion_matrix(targets, preds, list(dataset.le.classes_), save_path=os.path.join(config["logging"]["log_dir"], "confusion_matrix.png"))
+        plot_confusion_matrix(targets, preds, list(dataset.le.classes_), save_path=os.path.join(config["logging"]["log_dir"], file_model_name, f"{name}_confusion_matrix.png"))
 
-    eval_on_split(val_loader, "validacao")
-    eval_on_split(test_loader, "teste")
+    eval_on_split(val_loader, "validacao", file_model_name=final_model_name)
+    eval_on_split(test_loader, "teste", file_model_name=final_model_name)

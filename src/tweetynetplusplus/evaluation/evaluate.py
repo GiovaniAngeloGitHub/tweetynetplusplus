@@ -31,12 +31,7 @@ def evaluate_from_checkpoint(
     class_names = [str(c) for c in dataset.le.classes_]
 
     num_classes = len(dataset.le.classes_)
-    model = get_model_from_config(
-        model_name=config["model"]["name"],
-        num_classes=num_classes,
-        pretrained=config["model"].get("pretrained", True),
-        import_path=config["model"].get("import_path", None)
-    ).to(device)
+    model = get_model_from_config(config["model"], num_classes=num_classes).to(device)
 
     map_location = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.load_state_dict(torch.load(model_path, map_location=map_location))

@@ -1,8 +1,6 @@
 [model]
-custom = true
-name = "resnet18_custom"
-class_name = "ResNet18Finetune"
-module_path = "tweetynetplusplus.models.backbones.resnet18_ft"
+custom = false
+name = "resnet50"
 pretrained = true
 
 [data]

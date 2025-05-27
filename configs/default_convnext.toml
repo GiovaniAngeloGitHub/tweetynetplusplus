@@ -1,20 +1,17 @@
 [model]
-custom = true
-name = "resnet18_custom"
-class_name = "ResNet18Finetune"
-module_path = "tweetynetplusplus.models.backbones.resnet18_ft"
+name = "convnext_tiny"
 pretrained = true
 
 [data]
 processed_dir = "data/processed/llb11"
 annotation_file = "data/raw/llb11/llb11_annot.csv"
-batch_size = 16
+batch_size = 4
 
 [training]
-epochs = 40
-learning_rate = 5e-5
-weight_decay = 1e-5
-patience = 8
+epochs = 50
+learning_rate = 3e-5
+weight_decay = 1e-6
+patience = 10
 use_saved_model = false
 use_sampler = true
 
